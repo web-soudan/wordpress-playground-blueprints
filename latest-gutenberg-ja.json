@@ -1,0 +1,83 @@
+{
+    "landingPage": "/wp-admin/",
+    "preferredVersions": {
+      "php": "8.0",
+      "wp": "latest"
+    },
+    "phpExtensionBundles": [
+      "kitchen-sink"
+    ],
+    "features": {},
+    "steps": [
+      {
+        "step": "resetData"
+      },
+      {
+        "step": "importWxr",
+        "file": {
+          "resource": "url",
+          "url": "https://raw.githubusercontent.com/jawordpressorg/theme-test-data-ja/master/wordpress-theme-test-data-ja.xml"
+        }
+      },
+      {
+        "step": "mkdir",
+        "path": "/wordpress/wp-content/languages/plugins"
+      },
+      {
+        "step": "mkdir",
+        "path": "/wordpress/wp-content/languages/themes"
+      },
+      {
+        "step": "writeFile",
+        "path": "/wordpress/wp-content/languages/ja_JA.mo",
+        "data": {
+          "resource": "url",
+          "caption": "Downloading admin-ja_JA.mo",
+          "url": "https://translate.wordpress.org/projects/wp/dev/ja/default/export-translations?format=mo"
+        }
+      },
+      {
+        "step": "writeFile",
+        "path": "/wordpress/wp-content/languages/admin-ja_JA.mo",
+        "data": {
+          "resource": "url",
+          "caption": "Downloading admin-ja_JA.mo",
+          "url": "https://translate.wordpress.org/projects/wp/dev/admin/ja/default/export-translations?format=mo"
+        }
+      },
+      {
+        "step": "installPlugin",
+        "pluginZipFile": {
+          "resource": "wordpress.org/plugins",
+          "slug": "gutenberg"
+        },
+        "options": {
+          "activate": true
+        }
+      },
+      {
+        "step": "writeFile",
+        "path": "/wordpress/wp-content/languages/plugins/gutenberg-ja_JA.mo",
+        "data": {
+          "resource": "url",
+          "caption": "Downloading gutenberg-ja_JA.mo",
+          "url": "https://translate.wordpress.org/projects/wp-plugins/gutenberg/stable/ja/default/export-translations/?format=mo"
+        }
+      },
+      {
+        "step": "setSiteOptions",
+        "options": {
+          "WPLANG": "ja_JA",
+          "timezone_string": "Asia/Tokyo",
+          "date_format": "Y年n月j日",
+          "time_format": "'H:i"
+        }
+      },
+      {
+        "step": "login",
+        "username": "admin",
+        "password": "password"
+      }
+    ]
+  }
+  
