@@ -16,7 +16,7 @@
         "step": "importWxr",
         "file": {
           "resource": "url",
-          "url": "https://raw.githubusercontent.com/jawordpressorg/theme-test-data-ja/master/wordpress-theme-test-data-ja.xml"
+          "url": "https://raw.githubusercontent.com/web-soudan/wordpress-playground-blueprints/main/wordpress-theme-test-data-ja.xml"
         }
       },
       {
