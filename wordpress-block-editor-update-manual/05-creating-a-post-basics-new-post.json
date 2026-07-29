@@ -1,0 +1,52 @@
+{
+  "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+  "landingPage": "/wp-admin/post-new.php",
+  "preferredVersions": {
+    "php": "8.3",
+    "wp": "latest"
+  },
+  "features": {
+    "networking": true
+  },
+  "steps": [
+    {
+      "step": "setSiteLanguage",
+      "language": "ja"
+    },
+    {
+      "step": "setSiteOptions",
+      "options": {
+        "blogname": "ログイン体験用サイト",
+        "blogdescription": "WordPress の管理画面にログインしてみましょう",
+        "timezone_string": "Asia/Tokyo",
+        "date_format": "Y年n月j日",
+        "time_format": "H:i"
+      }
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php require_once '/wordpress/wp-load.php'; $login = 'web-soudan'; $pass = 'web-soudan'; $user = get_user_by('login', $login); if (!$user) { $uid = wp_create_user($login, $pass, 'demo@example.com'); } else { $uid = $user->ID; wp_set_password($pass, $uid); } $u = new WP_User($uid); $u->set_role('administrator'); wp_update_user(array('ID' => $uid, 'display_name' => 'Webの相談所', 'nickname' => 'Webの相談所', 'locale' => 'ja'));"
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php require_once '/wordpress/wp-load.php'; require_once ABSPATH . 'wp-admin/includes/user.php'; $demo = get_user_by('login', 'web-soudan'); $admin = get_user_by('login', 'admin'); if ($demo && $admin && $demo->ID !== $admin->ID) { wp_delete_user($admin->ID, $demo->ID); }"
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php require_once '/wordpress/wp-load.php'; $demo = get_user_by('login', 'web-soudan'); if ($demo) { update_user_meta($demo->ID, 'wp_persisted_preferences', array('_modified' => gmdate('Y-m-d\\TH:i:s\\Z'), 'core' => array('welcomeGuide' => false, 'fullscreenMode' => false), 'core/edit-post' => array('welcomeGuide' => false, 'fullscreenMode' => false))); }"
+    },
+    {
+      "step": "writeFile",
+      "path": "/wordpress/wp-content/mu-plugins/demo-login-hint.php",
+      "data": "<?php\n/*\nPlugin Name: Demo Login Hint\nDescription: ログアウトした場合に備え、Playground 既定のログイン情報表示を体験用の案内へ差し替えます。\n*/\n\nadd_action( 'login_init', function () {\n\tremove_all_filters( 'login_message' );\n\tadd_filter( 'login_message', 'wsd_demo_login_message' );\n}, 0 );\n\nfunction wsd_demo_login_message( $message ) {\n\tif ( ! empty( $_GET['action'] ) && 'login' !== $_GET['action'] ) {\n\t\treturn $message;\n\t}\n\n\t$hint  = '<div style=\"background:#fff;border-left:4px solid #2271b1;padding:14px 16px;margin-bottom:20px;font-size:13px;line-height:1.7;\">';\n\t$hint .= '<p style=\"margin:0 0 8px;font-weight:600;\">体験用のログイン情報</p>';\n\t$hint .= '<p style=\"margin:0;\">ユーザー名: <code>web-soudan</code><br>パスワード: <code>web-soudan</code></p>';\n\t$hint .= '</div>';\n\n\treturn $hint . $message;\n}\n"
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php require_once '/wordpress/wp-load.php'; require_once ABSPATH . 'wp-admin/includes/media.php'; require_once ABSPATH . 'wp-admin/includes/file.php'; require_once ABSPATH . 'wp-admin/includes/image.php'; media_sideload_image('https://web-soudan.co.jp/wp-content/uploads/2025/01/logo_web-soudan.png.webp', 0, null, 'id');"
+    },
+    {
+      "step": "login",
+      "username": "web-soudan"
+    }
+  ]
+}
