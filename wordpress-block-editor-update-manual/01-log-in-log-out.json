@@ -1,4 +1,3 @@
-01-log-in-log-out.json
 {
   "$schema": "https://playground.wordpress.net/blueprint-schema.json",
   "landingPage": "/wp-login.php",
