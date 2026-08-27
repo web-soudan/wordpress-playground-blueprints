@@ -1,0 +1,61 @@
+{
+  "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+  "landingPage": "/wp-admin/post-new.php",
+  "preferredVersions": {
+    "php": "8.3",
+    "wp": "latest"
+  },
+  "features": {
+    "networking": true
+  },
+  "steps": [
+    {
+      "step": "setSiteLanguage",
+      "language": "ja"
+    },
+    {
+      "step": "setSiteOptions",
+      "options": {
+        "blogname": "ログイン体験用サイト",
+        "blogdescription": "WordPress の管理画面にログインしてみましょう",
+        "timezone_string": "Asia/Tokyo",
+        "date_format": "Y年n月j日",
+        "time_format": "H:i"
+      }
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php require_once '/wordpress/wp-load.php'; $login = 'web-soudan'; $pass = 'web-soudan'; $user = get_user_by('login', $login); if (!$user) { $uid = wp_create_user($login, $pass, 'demo@example.com'); } else { $uid = $user->ID; wp_set_password($pass, $uid); } $u = new WP_User($uid); $u->set_role('administrator'); wp_update_user(array('ID' => $uid, 'display_name' => 'Webの相談所', 'nickname' => 'Webの相談所', 'locale' => 'ja'));"
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php require_once '/wordpress/wp-load.php'; require_once ABSPATH . 'wp-admin/includes/user.php'; $demo = get_user_by('login', 'web-soudan'); $admin = get_user_by('login', 'admin'); if ($demo && $admin && $demo->ID !== $admin->ID) { wp_delete_user($admin->ID, $demo->ID); }"
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php require_once '/wordpress/wp-load.php'; $demo = get_user_by('login', 'web-soudan'); if ($demo) { update_user_meta($demo->ID, 'wp_persisted_preferences', array('_modified' => gmdate('Y-m-d\\TH:i:s\\Z'), 'core' => array('welcomeGuide' => false, 'fullscreenMode' => false), 'core/edit-post' => array('welcomeGuide' => false, 'fullscreenMode' => false))); }"
+    },
+    {
+      "step": "writeFile",
+      "path": "/wordpress/wp-content/mu-plugins/demo-login-hint.php",
+      "data": "<?php\n/*\nPlugin Name: Demo Login Hint\nDescription: ログアウトした場合に備え、Playground 既定のログイン情報表示を体験用の案内へ差し替えます。\n*/\n\nadd_action( 'login_init', function () {\n\tremove_all_filters( 'login_message' );\n\tadd_filter( 'login_message', 'wsd_demo_login_message' );\n}, 0 );\n\nfunction wsd_demo_login_message( $message ) {\n\tif ( ! empty( $_GET['action'] ) && 'login' !== $_GET['action'] ) {\n\t\treturn $message;\n\t}\n\n\t$hint  = '<div style=\"background:#fff;border-left:4px solid #2271b1;padding:14px 16px;margin-bottom:20px;font-size:13px;line-height:1.7;\">';\n\t$hint .= '<p style=\"margin:0 0 8px;font-weight:600;\">体験用のログイン情報</p>';\n\t$hint .= '<p style=\"margin:0;\">ユーザー名: <code>web-soudan</code><br>パスワード: <code>web-soudan</code></p>';\n\t$hint .= '</div>';\n\n\treturn $hint . $message;\n}\n"
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php\nrequire_once '/wordpress/wp-load.php';\nrequire_once ABSPATH . 'wp-admin/includes/media.php';\nrequire_once ABSPATH . 'wp-admin/includes/file.php';\nrequire_once ABSPATH . 'wp-admin/includes/image.php';\n\n$attachment_ids = get_posts( array(\n\t'post_type'   => 'attachment',\n\t'post_status' => 'any',\n\t'numberposts' => -1,\n\t'fields'      => 'ids',\n) );\nforeach ( $attachment_ids as $attachment_id ) {\n\twp_delete_attachment( $attachment_id, true );\n}\n\n$files = array(\n\t'https://web-soudan.co.jp/wp-content/uploads/2026/08/for_DEMO-Movie.mp4',\n\t'https://web-soudan.co.jp/wp-content/uploads/2026/08/for_DEMO-pdf.pdf',\n);\nforeach ( $files as $file_url ) {\n\t$tmp_file = download_url( $file_url );\n\tif ( is_wp_error( $tmp_file ) ) {\n\t\tcontinue;\n\t}\n\t$file_array = array(\n\t\t'name'     => basename( $file_url ),\n\t\t'tmp_name' => $tmp_file,\n\t);\n\t$new_attachment_id = media_handle_sideload( $file_array, 0 );\n\tif ( is_wp_error( $new_attachment_id ) ) {\n\t\t@unlink( $file_array['tmp_name'] );\n\t}\n}"
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php\nrequire_once '/wordpress/wp-load.php';\n$content = <<<'EOT'\n<!-- wp:group {\"style\":{\"spacing\":{\"padding\":{\"top\":\"var:preset|spacing|30\",\"bottom\":\"var:preset|spacing|30\",\"left\":\"var:preset|spacing|40\",\"right\":\"var:preset|spacing|40\"}}},\"backgroundColor\":\"accent-1\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group has-accent-1-background-color has-background\" style=\"padding-top:var(--wp--preset--spacing--30);padding-right:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--30);padding-left:var(--wp--preset--spacing--40)\"><!-- wp:paragraph -->\n<p><strong>注釈:</strong> WordPress PlaygroundのPHP実行環境に Imagick（+ Ghostscript）が入っていないため、PDFのプレビューは行えないため、実際のインストール型のWordPressの必要があります。</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->\nEOT;\n$post_id = wp_insert_post( array(\n\t'post_type'    => 'post',\n\t'post_title'   => '動画・PDFファイルを見れるようにする',\n\t'post_content' => $content,\n\t'post_status'  => 'publish',\n) );\n\nif ( $post_id && ! is_wp_error( $post_id ) ) {\n\tupdate_option( 'wsd_demo_draft_post_id', $post_id );\n}"
+    },
+    {
+      "step": "writeFile",
+      "path": "/wordpress/wp-content/mu-plugins/demo-new-post-redirect.php",
+      "data": "<?php\n/*\nPlugin Name: Demo New Post Redirect\nDescription: 新規投稿画面を開いた際に、あらかじめ公開しておいた記事の編集画面へ自動的に転送します。\n*/\n\nadd_action( 'load-post-new.php', function () {\n\tif ( ! empty( $_GET['post_type'] ) && 'post' !== $_GET['post_type'] ) {\n\t\treturn;\n\t}\n\n\t$post_id = (int) get_option( 'wsd_demo_draft_post_id' );\n\n\tif ( $post_id && get_post( $post_id ) ) {\n\t\twp_safe_redirect( admin_url( 'post.php?post=' . $post_id . '&action=edit' ) );\n\t\texit;\n\t}\n} );\n"
+    },
+    {
+      "step": "login",
+      "username": "web-soudan"
+    }
+  ]
+}
